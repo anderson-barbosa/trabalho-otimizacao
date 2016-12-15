@@ -26,6 +26,7 @@ vector<long double> grad_f2(long double x1, long double x2) {
 	vector<long double> ret(2);
 	ret[0] = (2*x1+2*exp(x1)*(exp(x1)-x2))/(1+pow(x1,2)+pow((exp(x1)-x2),2));
 	ret[1] = (-2*(exp(x1)-x2))/(pow(x1,2)+pow((exp(x1)-x2),2)+1);
+	//cout << ret[0]<< " " << ret[1] << " " << x1 << " " << x2 << endl;
 	return ret;
 }
 
@@ -80,6 +81,17 @@ vector<vector<long double> > h_f1(long double x1, long double x2) {
 	return ret;
 }
 
+vector<vector<long double> > h_f2(long double x1, long double x2) {
+	vector<vector<long double> > ret(2);
+	ret[0].resize(2);
+	ret[1].resize(2);
+	ret[0][0] = (-2*exp(x1)*pow(x2,3)-2*exp(x1)*pow(x1,2)*x2-6*exp(x1)*x2+8*exp(x1)*x1*x2-2*exp(3*x1)*x2+4*exp(2*x1)*pow(x2,2)+6*exp(2*x1)+4*exp(2*x1)*pow(x1,2)-8*exp(2*x1)*x1-2*pow(x1,2)+2*pow(x2,2)+2)/pow((1+pow(x1,2)+pow(exp(x1)-x2,2)),2);
+	ret[0][1] = (2*exp(x1)*pow(x2,2)-2*exp(x1)*pow(x1,2)-2*exp(x1)+4*exp(x1)*x1-4*exp(2*x1)*x2+2*exp(3*x1)-4*x1*x2)/pow((1+pow(x1,2)+pow(exp(x1)-x2,2)),2);
+	ret[1][0] = ret[0][1];
+	ret[1][1] = -2*(exp(2*x1)-2*exp(x1)*x2+pow(x2,2)-pow(x1,2)-1)/pow((1+pow(x1,2)+pow(exp(x1)-x2,2)),2);
+	return ret;
+}
+
 vector<long double> mult(vector<vector<long double> > a, vector<long double> b) {
 	vector<long double> ret(2);
 	ret[0] = a[0][0]*b[0]+a[0][1]*b[1];
@@ -91,7 +103,7 @@ vector<long double> mult(vector<vector<long double> > a, vector<long double> b) 
 vector<long double> newton(vector<long double> x0, Funcao func, Gradiente grad, Hessiana h) {
 	int k = 0;
 	vector<long double> xk = x0;
-	while ((grad(xk[0], xk[1])[0]!=0 || grad(xk[0], xk[1])[1]!=0) && k<1000) {
+	while ((grad(xk[0], xk[1])[0]!=0 || grad(xk[0], xk[1])[1]!=0) && k<100) {
 		vector<long double> dk(2);
 		dk[0] = -mult(inversa(h(xk[0], xk[1])), grad(xk[0], xk[1]))[0];
 		dk[1] = -mult(inversa(h(xk[0], xk[1])), grad(xk[0], xk[1]))[1];
@@ -100,6 +112,7 @@ vector<long double> newton(vector<long double> x0, Funcao func, Gradiente grad, 
 		xk[0]+=tk*dk[0];
 		xk[1]+=tk*dk[1];
 		k+=1;
+		cout << tk << endl;
 	}
 	return xk;
 }
@@ -114,6 +127,7 @@ vector<long double> sub(vector<long double> a, vector<long double> b) {
 
 vector<vector<long double> > bfgs(vector<long double> pk, vector<long double> qk, vector<vector<long double> > hk) {
 	long double a = pk[0]*qk[0]+pk[1]*qk[1];
+	cout << pk[0]<< " "<< pk[1] << " "<< qk[0] << " "<< qk[1] << endl;
 	vector<long double> b(2);
 	b[0] = hk[0][0]*qk[0]+hk[0][1]*qk[1];
 	b[1] = hk[1][0]*qk[0]+hk[1][1]*qk[1];
@@ -161,14 +175,16 @@ vector<long double> quaseNewton(vector<long double> x0, vector<vector<long doubl
 	int k = 0;
 	vector<long double> xk = x0;
 	vector<vector<long double> > hk=h0;
-	while ((grad(xk[0], xk[1])[0]!=0 || grad(xk[0], xk[1])[1]!=0) && k<1000) {
+	while ((grad(xk[0], xk[1])[0]!=0 || grad(xk[0], xk[1])[1]!=0) && k<10) {
 		vector<long double> dk(2);
 		dk[0] = -mult(hk, grad(xk[0], xk[1]))[0];
 		dk[1] = -mult(hk, grad(xk[0], xk[1]))[1];
 		long double tk = armijo(xk, dk, Y, N, func, grad);
 		vector<long double> xl=xk;
+		//cout << xk[0] << " " << xk[1] << endl;
 		xk[0]+=tk*dk[0];
 		xk[1]+=tk*dk[1];
+		cout << dk[0] << " "<< dk[1] << endl;
 		vector<long double> pk = sub(xk,xl); 
 		vector<long double>  qk = sub(grad(xk[0], xk[1]), grad(xl[0], xl[1]));
 		hk = bfgs(pk, qk, hk); 
@@ -197,7 +213,7 @@ int main(){
 	h0[1][1] = 1;
 
 
-	vector<long double> x = quaseNewton(xbarra, h0, f1, grad_f1);
+	vector<long double> x = newton(xbarra, f2, grad_f2, h_f2);
 	cout << x[0] << " " << x[1] << endl;
 	cout << "Erro = " << abs(f2(x[0], x[1])) << endl;
 }

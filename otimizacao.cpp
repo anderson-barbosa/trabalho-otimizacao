@@ -6,15 +6,21 @@ using namespace std;
 #define Y 0.8
 #define N 0.3
 
+typedef long double (*Funcao)(long double, long double);
+typedef vector<long double> (*Gradiente)(long double, long double);
+typedef vector<vector<long double> > (*Hessiana)(long double, long double);
 
+//expressão da primeira função f1
 long double f1(long double x1, long double x2) {
 	return pow(x1,2)+pow((exp(x1)-x2),2);
 }
 
+//expressão da segunda função f2
 long double f2(long double x1, long double x2) {
 	return log(1+pow(x1,2)+pow((exp(x1)-x2),2));
 }
 
+//calcula a primeira derivada da função f1, em relação a x1 e x2 respectivamente
 vector<long double> grad_f1(long double x1, long double x2) {
 	vector<long double> ret(2);
 	ret[0] = 2*x1+2*exp(x1)*(exp(x1)-x2);
@@ -22,6 +28,7 @@ vector<long double> grad_f1(long double x1, long double x2) {
 	return ret;
 }
 
+//calcula a primeira derivada da função f2, em relação a x1 e x2 respectivamente
 vector<long double> grad_f2(long double x1, long double x2) {
 	vector<long double> ret(2);
 	ret[0] = (2*x1+2*exp(x1)*(exp(x1)-x2))/(1+pow(x1,2)+pow((exp(x1)-x2),2));
@@ -30,10 +37,7 @@ vector<long double> grad_f2(long double x1, long double x2) {
 	return ret;
 }
 
-typedef long double (*Funcao)(long double, long double);
-typedef vector<long double> (*Gradiente)(long double, long double);
-typedef vector<vector<long double> > (*Hessiana)(long double, long double);
-
+//Algoritmo da Busca de Armijo
 long double armijo(vector<long double> xbarra, vector<long double> d, long double y, long double n, Funcao func, Gradiente grad) {
 	long double t = 1;
 	while(func(xbarra[0]+t*d[0], xbarra[1]+t*d[1])>func(xbarra[0], xbarra[1])+n*t*(grad(xbarra[0], xbarra[1])[0]*d[0]+grad(xbarra[0], xbarra[1])[1]*d[1])) {
@@ -42,10 +46,11 @@ long double armijo(vector<long double> xbarra, vector<long double> d, long doubl
 	return t;
 }
 
+//Algoritmo do Método do Gradiente
 vector<long double> gradiente(vector<long double> x0, Funcao func, Gradiente grad) {
 	int k = 0;
 	vector<long double> xk=x0;
-	while ((grad(xk[0], xk[1])[0]!=0 || grad(xk[0], xk[1])[1]!=0) && k<1000) {
+	while ((grad(xk[0], xk[1])[0]!=0 || grad(xk[0], xk[1])[1]!=0) && k<1000) { //número de iterações limitada em 1000
 		vector<long double> dk(2);
 		dk[0] = -grad(xk[0], xk[1])[0];
 		dk[1] = -grad(xk[0], xk[1])[1];
@@ -57,11 +62,12 @@ vector<long double> gradiente(vector<long double> x0, Funcao func, Gradiente gra
 	return xk;
 }
 
+//calcula a matriz inversa de uma matriz m 2x2
 vector<vector<long double> > inversa(vector<vector<long double> > m) {
 	vector<vector<long double> > ret(2);
 	ret[0].resize(2);
 	ret[1].resize(2);
-	long double d = m[0][0]*m[1][1]-m[0][1]*m[1][0];
+	long double d = m[0][0]*m[1][1]-m[0][1]*m[1][0]; // determinante da matriz
 	// cout << d << endl;
 	ret[0][0] = m[1][1]/d;
 	ret[1][1] = m[0][0]/d;
@@ -70,6 +76,7 @@ vector<vector<long double> > inversa(vector<vector<long double> > m) {
 	return ret;
 }
 
+//Calcula a hessiana da função f1
 vector<vector<long double> > h_f1(long double x1, long double x2) {
 	vector<vector<long double> > ret(2);
 	ret[0].resize(2);
@@ -81,6 +88,7 @@ vector<vector<long double> > h_f1(long double x1, long double x2) {
 	return ret;
 }
 
+//calcula a hessiana da função f2
 vector<vector<long double> > h_f2(long double x1, long double x2) {
 	vector<vector<long double> > ret(2);
 	ret[0].resize(2);
@@ -92,6 +100,7 @@ vector<vector<long double> > h_f2(long double x1, long double x2) {
 	return ret;
 }
 
+//calcula a multiplicação entre 2 matrizes, uma 2x2, a, e um vetor de 2 linhas e 1 coluna,b.
 vector<long double> mult(vector<vector<long double> > a, vector<long double> b) {
 	vector<long double> ret(2);
 	ret[0] = a[0][0]*b[0]+a[0][1]*b[1];
@@ -100,6 +109,7 @@ vector<long double> mult(vector<vector<long double> > a, vector<long double> b) 
 	return ret;
 }
 
+//Algoritmo do Método de Newton
 vector<long double> newton(vector<long double> x0, Funcao func, Gradiente grad, Hessiana h) {
 	int k = 0;
 	vector<long double> xk = x0;
@@ -117,6 +127,7 @@ vector<long double> newton(vector<long double> x0, Funcao func, Gradiente grad, 
 	return xk;
 }
 
+// calcula a subtração de 2 vetores, ou seja, 2 matrizes de 2 linhas e 1 coluna, a e b.
 vector<long double> sub(vector<long double> a, vector<long double> b) {
 	vector<long double> ret(2);
 	ret[0]=a[0]-b[0];
@@ -125,6 +136,7 @@ vector<long double> sub(vector<long double> a, vector<long double> b) {
 
 }
 
+//Método BFGS, que atualiza Hk de modo que, ao longo das iterações, a matriz se aproxime da inversa da Hessiana.
 vector<vector<long double> > bfgs(vector<long double> pk, vector<long double> qk, vector<vector<long double> > hk) {
 	long double a = pk[0]*qk[0]+pk[1]*qk[1];
 	cout << pk[0]<< " "<< pk[1] << " "<< qk[0] << " "<< qk[1] << endl;
@@ -171,6 +183,7 @@ vector<vector<long double> > bfgs(vector<long double> pk, vector<long double> qk
 	return ret;
 }
 
+//Algoritmo do Método Quase-Newton
 vector<long double> quaseNewton(vector<long double> x0, vector<vector<long double> > h0, Funcao func, Gradiente grad) {
 	int k = 0;
 	vector<long double> xk = x0;

@@ -47,10 +47,10 @@ long double armijo(vector<long double> xbarra, vector<long double> d, long doubl
 }
 
 //Algoritmo do Método do Gradiente
-vector<long double> gradiente(vector<long double> x0, Funcao func, Gradiente grad) {
+vector<long double> gradiente(vector<long double> x0, Funcao func, Gradiente grad, long double tol) {
 	int k = 0;
 	vector<long double> xk=x0;
-	while ((grad(xk[0], xk[1])[0]!=0 || grad(xk[0], xk[1])[1]!=0) && k<1000) { //número de iterações limitada em 1000
+	while ((abs(grad(xk[0], xk[1])[0])>tol || abs(grad(xk[0], xk[1])[1])>tol) && k<1000) { //número de iterações limitada em 1000
 		vector<long double> dk(2);
 		dk[0] = -grad(xk[0], xk[1])[0];
 		dk[1] = -grad(xk[0], xk[1])[1];
@@ -59,6 +59,7 @@ vector<long double> gradiente(vector<long double> x0, Funcao func, Gradiente gra
 		xk[1]+=tk*dk[1];
 		k+=1;
 	}
+	cout << "Número de iterações: " << k << endl;
 	return xk;
 }
 
@@ -110,10 +111,10 @@ vector<long double> mult(vector<vector<long double> > a, vector<long double> b) 
 }
 
 //Algoritmo do Método de Newton
-vector<long double> newton(vector<long double> x0, Funcao func, Gradiente grad, Hessiana h) {
+vector<long double> newton(vector<long double> x0, Funcao func, Gradiente grad, Hessiana h, long double tol) {
 	int k = 0;
 	vector<long double> xk = x0;
-	while ((grad(xk[0], xk[1])[0]!=0 || grad(xk[0], xk[1])[1]!=0) && k<100) {
+	while ((abs(grad(xk[0], xk[1])[0])>tol || abs(grad(xk[0], xk[1])[1])>tol) && k<100) {
 		vector<long double> dk(2);
 		dk[0] = -mult(inversa(h(xk[0], xk[1])), grad(xk[0], xk[1]))[0];
 		dk[1] = -mult(inversa(h(xk[0], xk[1])), grad(xk[0], xk[1]))[1];
@@ -122,8 +123,9 @@ vector<long double> newton(vector<long double> x0, Funcao func, Gradiente grad, 
 		xk[0]+=tk*dk[0];
 		xk[1]+=tk*dk[1];
 		k+=1;
-		cout << tk << endl;
+		//cout << tk << endl;
 	}
+	cout << "Número de iterações: " << k << endl;
 	return xk;
 }
 
@@ -139,7 +141,7 @@ vector<long double> sub(vector<long double> a, vector<long double> b) {
 //Método BFGS, que atualiza Hk de modo que, ao longo das iterações, a matriz se aproxime da inversa da Hessiana.
 vector<vector<long double> > bfgs(vector<long double> pk, vector<long double> qk, vector<vector<long double> > hk) {
 	long double a = pk[0]*qk[0]+pk[1]*qk[1];
-	cout << pk[0]<< " "<< pk[1] << " "<< qk[0] << " "<< qk[1] << endl;
+	//cout << pk[0]<< " "<< pk[1] << " "<< qk[0] << " "<< qk[1] << endl;
 	vector<long double> b(2);
 	b[0] = hk[0][0]*qk[0]+hk[0][1]*qk[1];
 	b[1] = hk[1][0]*qk[0]+hk[1][1]*qk[1];
@@ -184,11 +186,11 @@ vector<vector<long double> > bfgs(vector<long double> pk, vector<long double> qk
 }
 
 //Algoritmo do Método Quase-Newton
-vector<long double> quaseNewton(vector<long double> x0, vector<vector<long double> > h0, Funcao func, Gradiente grad) {
+vector<long double> quaseNewton(vector<long double> x0, vector<vector<long double> > h0, Funcao func, Gradiente grad, long double tol) {
 	int k = 0;
 	vector<long double> xk = x0;
 	vector<vector<long double> > hk=h0;
-	while ((grad(xk[0], xk[1])[0]!=0 || grad(xk[0], xk[1])[1]!=0) && k<10) {
+	while ((abs(grad(xk[0], xk[1])[0])>tol || abs(grad(xk[0], xk[1])[1])>tol) && k<100) {
 		vector<long double> dk(2);
 		dk[0] = -mult(hk, grad(xk[0], xk[1]))[0];
 		dk[1] = -mult(hk, grad(xk[0], xk[1]))[1];
@@ -197,25 +199,24 @@ vector<long double> quaseNewton(vector<long double> x0, vector<vector<long doubl
 		//cout << xk[0] << " " << xk[1] << endl;
 		xk[0]+=tk*dk[0];
 		xk[1]+=tk*dk[1];
-		cout << dk[0] << " "<< dk[1] << endl;
+		//cout << dk[0] << " "<< dk[1] << endl;
+		if (abs(xk[0]-xl[0])<1e-8 && abs(xk[0]-xl[0])<1e-8) {break;}
 		vector<long double> pk = sub(xk,xl); 
 		vector<long double>  qk = sub(grad(xk[0], xk[1]), grad(xl[0], xl[1]));
 		hk = bfgs(pk, qk, hk); 
 		k+=1;
 	}
-	cout << k << endl;
+	cout << "Número de iterações: " << k << endl;
 	return xk;
 }
 
-
-
 int main(){
 
-	cout << f1(1,1) << endl;
-	cout << f2(1,1) << endl;
+	//cout << f1(1,1) << endl;
+	//cout << f2(1,1) << endl;
 	vector<long double> xbarra(2);
-	xbarra[0]=10;
-	xbarra[1]=7;
+	//xbarra[0]=-0.9;
+	//xbarra[1]=0;
 
 	vector<vector<long double> > h0(2);
 	h0[0].resize(2);
@@ -224,9 +225,22 @@ int main(){
 	h0[0][1] = 0;
 	h0[1][0] = 0;
 	h0[1][1] = 1;
-
-
-	vector<long double> x = newton(xbarra, f2, grad_f2, h_f2);
-	cout << x[0] << " " << x[1] << endl;
-	cout << "Erro = " << abs(f2(x[0], x[1])) << endl;
+	vector<long double> x;
+	long double pontos[][2] = {{0.5,1.5},{0.1,1.1},{0.9,1.7},{-0.5,-1.5},{0.35,1.05}};
+	cout << "Função 1 Newton" << endl;
+	for (int i=0; i<5; i++) {
+		xbarra[0]=pontos[i][0];
+		xbarra[1]=pontos[i][1];
+		vector<long double> x = newton(xbarra, f1, grad_f1, h_f1,  0);
+		cout << "Ponto inicial: " << "(" << xbarra[0] << ", " << xbarra[1] << "); ";
+		cout << "Ponto ótimo: " << "(" << x[0] << ", " << x[1] << "); ";
+		cout << "Valor ótimo: " << f1(x[0], x[1]) << "; ";
+		cout << "Erro: " << abs(f1(x[0], x[1])-f1(0,1)) << endl;	
+	}
+	
+	//vector<long double> x = gradiente(xbarra, f2, grad_f2);
+	//vector<long double> x = newton(xbarra, f1, grad_f1, h_f1);
+	//vector<long double> x = quaseNewton(xbarra, h0, f2, grad_f2);
+	//cout << x[0] << " " << x[1] << endl;
+	//cout << "Erro = " << abs(f2(x[0], x[1])-f2(0,1)) << endl;
 }
